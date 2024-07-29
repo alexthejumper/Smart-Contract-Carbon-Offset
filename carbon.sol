@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 contract CarbonOffsetMarketplace {
+    address public owner;
+
     // Struct to represent a Carbon Offset Project
     struct Project {
         address owner;
@@ -30,8 +32,20 @@ contract CarbonOffsetMarketplace {
     // Event emitted when credits are retired
     event CreditsRetired(address indexed user, uint256 projectId, uint256 credits);
 
+    // Event emitted when a new proposal is created
+    event ProposalCreated(uint256 proposalId, string description, address proposer);
+
+    // Event emitted when a vote is cast
+    event VoteCast(uint256 proposalId, address voter, bool support);
+
+    constructor() {
+        owner = msg.sender;
+    }
+
     // Register a new Carbon Offset Project
     function registerProject(string memory _name, uint256 _totalCredits, uint256 _pricePerCredit) public {
+        require(msg.sender == owner, "Only the owner can register projects");
+        require(bytes(_name).length > 0, "Project name cannot be empty");
         require(_totalCredits > 0, "Total credits should be greater than zero");
         require(_pricePerCredit > 0, "Price per credit should be greater than zero");
 
@@ -49,6 +63,7 @@ contract CarbonOffsetMarketplace {
 
     // Purchase carbon credits from a project
     function purchaseCredits(uint256 _projectId, uint256 _credits) public payable {
+        require(_projectId < projectCount, "Invalid project ID");
         Project storage project = projects[_projectId];
         require(_credits > 0, "Credits should be greater than zero");
         require(_credits <= project.availableCredits, "Not enough available credits");
@@ -66,6 +81,7 @@ contract CarbonOffsetMarketplace {
 
     // Retire purchased credits to offset carbon
     function retireCredits(uint256 _projectId, uint256 _credits) public {
+        require(_projectId < projectCount, "Invalid project ID");
         require(userCredits[msg.sender][_projectId] >= _credits, "Insufficient credits to retire");
 
         userCredits[msg.sender][_projectId] -= _credits;
@@ -74,12 +90,14 @@ contract CarbonOffsetMarketplace {
 
     // Get project details
     function getProject(uint256 _projectId) public view returns (string memory, uint256, uint256, uint256, address) {
+        require(_projectId < projectCount, "Invalid project ID");
         Project storage project = projects[_projectId];
         return (project.name, project.totalCredits, project.availableCredits, project.pricePerCredit, project.owner);
     }
 
     // Get user's credits for a specific project
     function getUserCredits(address _user, uint256 _projectId) public view returns (uint256) {
+        require(_projectId < projectCount, "Invalid project ID");
         return userCredits[_user][_projectId];
     }
 
@@ -99,14 +117,11 @@ contract CarbonOffsetMarketplace {
 
     Proposal[] public proposals;
 
-    // Event emitted when a new proposal is created
-    event ProposalCreated(uint256 proposalId, string description, address proposer);
-
-    // Event emitted when a vote is cast
-    event VoteCast(uint256 proposalId, address voter, bool support);
-
     // Create a new proposal
     function createProposal(string memory _description) public {
+        require(msg.sender == owner, "Only the owner can create proposals");
+        require(bytes(_description).length > 0, "Proposal description cannot be empty");
+
         proposals.push(Proposal({
             proposer: msg.sender,
             description: _description,
@@ -120,6 +135,7 @@ contract CarbonOffsetMarketplace {
 
     // Vote on a proposal
     function voteOnProposal(uint256 _proposalId, bool _support) public {
+        require(_proposalId < proposals.length, "Invalid proposal ID");
         Proposal storage proposal = proposals[_proposalId];
         require(!proposal.executed, "Proposal already executed");
 
@@ -134,6 +150,8 @@ contract CarbonOffsetMarketplace {
 
     // Execute a proposal if it has enough votes
     function executeProposal(uint256 _proposalId) public {
+        require(msg.sender == owner, "Only the owner can execute proposals");
+        require(_proposalId < proposals.length, "Invalid proposal ID");
         Proposal storage proposal = proposals[_proposalId];
         require(!proposal.executed, "Proposal already executed");
         require(proposal.votesFor > proposal.votesAgainst, "Proposal did not pass");

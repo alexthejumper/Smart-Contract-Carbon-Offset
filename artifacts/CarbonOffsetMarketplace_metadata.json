@@ -1,10 +1,15 @@
 {
 	"compiler": {
-		"version": "0.8.26+commit.8a97fa7a"
+		"version": "0.8.0+commit.c7dfd78e"
 	},
 	"language": "Solidity",
 	"output": {
 		"abi": [
+			{
+				"inputs": [],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
 			{
 				"anonymous": false,
 				"inputs": [
@@ -246,6 +251,19 @@
 			},
 			{
 				"inputs": [],
+				"name": "owner",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "projectCount",
 				"outputs": [
 					{
@@ -471,7 +489,7 @@
 		"compilationTarget": {
 			"carbon.sol": "CarbonOffsetMarketplace"
 		},
-		"evmVersion": "cancun",
+		"evmVersion": "istanbul",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
@@ -484,11 +502,11 @@
 	},
 	"sources": {
 		"carbon.sol": {
-			"keccak256": "0xf0cf40e92054ab522d17230879641a190d3b4d1b215106e8b37d5555599a4097",
+			"keccak256": "0x375e5cd11ca1c87cfeeb8328e38db5c89a58909d2a968ceaa39b2d54b3013738",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://d93dde6d036bfeb695ac9967e6291f9e4a16c4fdfbd04445b40453406690233d",
-				"dweb:/ipfs/QmUtNuSqWzzMjL9zyQ3aHdyxNzEgoro31xd78Gjsg2sMmP"
+				"bzz-raw://4ca0ebe102cac9e14930c475bcdc7d172350270375ee68bf5a8c03484bb57e43",
+				"dweb:/ipfs/QmevPcURwHDeDNY4WHHhFMWgqJRMVnaFKcovGhEnEBh78j"
 			]
 		}
 	},
