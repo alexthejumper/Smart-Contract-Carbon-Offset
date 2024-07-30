@@ -3,6 +3,10 @@ pragma solidity ^0.8.0;
 
 contract CarbonOffsetMarketplace {
     address public owner;
+    uint256 public feePercentage = 100; // Fee percentage in basis points (e.g., 1% = 100 basis points)
+    bool public allowNonOwnerRegistration = false; // Flag to allow/disallow non-owners to register projects
+    uint256 public minVotesForProposal = 1; // Minimum votes required for a proposal to be executed
+    uint256 public transferFee = 2 ether; // Fixed fee for credit transfers
 
     // Struct to represent a Carbon Offset Project
     struct Project {
@@ -26,11 +30,17 @@ contract CarbonOffsetMarketplace {
     // Event emitted when a new project is registered
     event ProjectRegistered(uint256 projectId, string name, uint256 totalCredits, uint256 pricePerCredit);
 
+    // Event emitted when a project is updated
+    event ProjectUpdated(uint256 projectId, string name, uint256 totalCredits, uint256 pricePerCredit);
+
     // Event emitted when credits are purchased
     event CreditsPurchased(address indexed buyer, uint256 projectId, uint256 credits);
 
     // Event emitted when credits are retired
     event CreditsRetired(address indexed user, uint256 projectId, uint256 credits);
+
+    // Event emitted when credits are transferred
+    event CreditsTransferred(address indexed from, address indexed to, uint256 projectId, uint256 credits);
 
     // Event emitted when a new proposal is created
     event ProposalCreated(uint256 proposalId, string description, address proposer);
@@ -38,13 +48,31 @@ contract CarbonOffsetMarketplace {
     // Event emitted when a vote is cast
     event VoteCast(uint256 proposalId, address voter, bool support);
 
+    // Event emitted when a proposal is executed
+    event ProposalExecuted(uint256 proposalId);
+
     constructor() {
         owner = msg.sender;
     }
 
+    // Toggle registration by non-owners
+    function toggleNonOwnerRegistration(bool _allow) public {
+        require(msg.sender == owner, "Only the owner can toggle registration permissions");
+        allowNonOwnerRegistration = _allow;
+    }
+
+    // Set minimum votes required for a proposal to be executed
+    function setMinVotesForProposal(uint256 _minVotes) public {
+        require(msg.sender == owner, "Only the owner can set minimum votes");
+        minVotesForProposal = _minVotes;
+    }
+
     // Register a new Carbon Offset Project
     function registerProject(string memory _name, uint256 _totalCredits, uint256 _pricePerCredit) public {
-        require(msg.sender == owner, "Only the owner can register projects");
+        require(
+            msg.sender == owner || allowNonOwnerRegistration,
+            "Only the owner can register projects and non-owners are not allowed"
+        );
         require(bytes(_name).length > 0, "Project name cannot be empty");
         require(_totalCredits > 0, "Total credits should be greater than zero");
         require(_pricePerCredit > 0, "Price per credit should be greater than zero");
@@ -61,20 +89,44 @@ contract CarbonOffsetMarketplace {
         projectCount++;
     }
 
+    // Update an existing Carbon Offset Project
+    function updateProject(uint256 _projectId, string memory _name, uint256 _totalCredits, uint256 _pricePerCredit) public {
+        require(_projectId < projectCount, "Invalid project ID");
+        Project storage project = projects[_projectId];
+        require(msg.sender == project.owner, "Only the project owner can update the project");
+        require(bytes(_name).length > 0, "Project name cannot be empty");
+        require(_totalCredits > 0, "Total credits should be greater than zero");
+        require(_pricePerCredit > 0, "Price per credit should be greater than zero");
+
+        project.name = _name;
+        project.totalCredits = _totalCredits;
+        project.availableCredits = _totalCredits;
+        project.pricePerCredit = _pricePerCredit;
+
+        emit ProjectUpdated(_projectId, _name, _totalCredits, _pricePerCredit);
+    }
+
     // Purchase carbon credits from a project
     function purchaseCredits(uint256 _projectId, uint256 _credits) public payable {
         require(_projectId < projectCount, "Invalid project ID");
         Project storage project = projects[_projectId];
         require(_credits > 0, "Credits should be greater than zero");
         require(_credits <= project.availableCredits, "Not enough available credits");
-        require(msg.value >= _credits * project.pricePerCredit, "Insufficient payment");
+        uint256 totalPrice = _credits * project.pricePerCredit;
+        require(msg.value >= totalPrice, "Insufficient payment");
+
+        uint256 fee = (totalPrice * feePercentage) / 10000; // Calculate fee
+        uint256 paymentToOwner = totalPrice - fee;
 
         project.availableCredits -= _credits;
         userCredits[msg.sender][_projectId] += _credits;
         userReputation[msg.sender] += _credits; // Increase user's reputation points
 
         // Transfer payment to project owner
-        payable(project.owner).transfer(msg.value);
+        payable(project.owner).transfer(paymentToOwner);
+
+        // Transfer fee to contract owner
+        payable(owner).transfer(fee);
 
         emit CreditsPurchased(msg.sender, _projectId, _credits);
     }
@@ -86,6 +138,25 @@ contract CarbonOffsetMarketplace {
 
         userCredits[msg.sender][_projectId] -= _credits;
         emit CreditsRetired(msg.sender, _projectId, _credits);
+    }
+
+    // Transfer carbon credits between users
+    function transferCredits(address _to, uint256 _projectId, uint256 _credits) public payable {
+        require(_projectId < projectCount, "Invalid project ID");
+        require(userCredits[msg.sender][_projectId] >= _credits, "Insufficient credits to transfer");
+        require(msg.value >= transferFee, "Insufficient fee for the transfer");
+
+        uint256 totalCredits = userCredits[msg.sender][_projectId];
+        require(totalCredits >= _credits, "Insufficient credits for transfer");
+
+        // Deduct transfer fee from sender
+        payable(owner).transfer(transferFee);
+
+        // Perform credit transfer
+        userCredits[msg.sender][_projectId] -= _credits;
+        userCredits[_to][_projectId] += _credits;
+
+        emit CreditsTransferred(msg.sender, _to, _projectId, _credits);
     }
 
     // Get project details
@@ -154,10 +225,11 @@ contract CarbonOffsetMarketplace {
         require(_proposalId < proposals.length, "Invalid proposal ID");
         Proposal storage proposal = proposals[_proposalId];
         require(!proposal.executed, "Proposal already executed");
-        require(proposal.votesFor > proposal.votesAgainst, "Proposal did not pass");
+        require(proposal.votesFor >= minVotesForProposal, "Proposal did not meet the minimum votes required");
 
         // Add your proposal execution logic here
 
         proposal.executed = true;
+        emit ProposalExecuted(_proposalId);
     }
 }

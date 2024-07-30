@@ -64,6 +64,37 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "from",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "projectId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "credits",
+						"type": "uint256"
+					}
+				],
+				"name": "CreditsTransferred",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
 						"indexed": false,
 						"internalType": "uint256",
 						"name": "projectId",
@@ -89,6 +120,37 @@
 					}
 				],
 				"name": "ProjectRegistered",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "projectId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "name",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalCredits",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "pricePerCredit",
+						"type": "uint256"
+					}
+				],
+				"name": "ProjectUpdated",
 				"type": "event"
 			},
 			{
@@ -124,6 +186,19 @@
 						"internalType": "uint256",
 						"name": "proposalId",
 						"type": "uint256"
+					}
+				],
+				"name": "ProposalExecuted",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "proposalId",
+						"type": "uint256"
 					},
 					{
 						"indexed": false,
@@ -140,6 +215,19 @@
 				],
 				"name": "VoteCast",
 				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "allowNonOwnerRegistration",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
 			},
 			{
 				"inputs": [
@@ -165,6 +253,19 @@
 				"name": "executeProposal",
 				"outputs": [],
 				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "feePercentage",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -239,6 +340,19 @@
 					}
 				],
 				"name": "getUserReputation",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "minVotesForProposal",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -415,6 +529,96 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint256",
+						"name": "_minVotes",
+						"type": "uint256"
+					}
+				],
+				"name": "setMinVotesForProposal",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bool",
+						"name": "_allow",
+						"type": "bool"
+					}
+				],
+				"name": "toggleNonOwnerRegistration",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_projectId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_credits",
+						"type": "uint256"
+					}
+				],
+				"name": "transferCredits",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "transferFee",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_projectId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "_name",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_totalCredits",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_pricePerCredit",
+						"type": "uint256"
+					}
+				],
+				"name": "updateProject",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "address",
 						"name": "",
 						"type": "address"
@@ -502,11 +706,11 @@
 	},
 	"sources": {
 		"carbon.sol": {
-			"keccak256": "0x375e5cd11ca1c87cfeeb8328e38db5c89a58909d2a968ceaa39b2d54b3013738",
+			"keccak256": "0x019e72099a29eb39675251d834f705ad51bb45561428700917b78f53c6c9d2fe",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://4ca0ebe102cac9e14930c475bcdc7d172350270375ee68bf5a8c03484bb57e43",
-				"dweb:/ipfs/QmevPcURwHDeDNY4WHHhFMWgqJRMVnaFKcovGhEnEBh78j"
+				"bzz-raw://924162eaf7b6e2773fb67a60cfa1c603db7b7787731d18a8fb9a75ba789a1907",
+				"dweb:/ipfs/QmeY3eqYc4djV4PbN6G2UkxxKwXXGDwYRermxbeZZUuDKj"
 			]
 		}
 	},
