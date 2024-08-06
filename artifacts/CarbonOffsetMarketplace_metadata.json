@@ -1,6 +1,6 @@
 {
 	"compiler": {
-		"version": "0.8.0+commit.c7dfd78e"
+		"version": "0.8.26+commit.8a97fa7a"
 	},
 	"language": "Solidity",
 	"output": {
@@ -9,6 +9,25 @@
 				"inputs": [],
 				"stateMutability": "nonpayable",
 				"type": "constructor"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "badge",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newThreshold",
+						"type": "uint256"
+					}
+				],
+				"name": "BadgeThresholdUpdated",
+				"type": "event"
 			},
 			{
 				"anonymous": false,
@@ -195,6 +214,31 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "user",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "rewardPoints",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "badge",
+						"type": "string"
+					}
+				],
+				"name": "RewardEarned",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
 						"indexed": false,
 						"internalType": "uint256",
 						"name": "proposalId",
@@ -217,6 +261,45 @@
 				"type": "event"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "allTransactions",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "user",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "projectId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "credits",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "action",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "allowNonOwnerRegistration",
 				"outputs": [
@@ -230,29 +313,29 @@
 				"type": "function"
 			},
 			{
-				"inputs": [
-					{
-						"internalType": "string",
-						"name": "_description",
-						"type": "string"
-					}
-				],
-				"name": "createProposal",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
+				"inputs": [],
+				"name": "carbonChampionThreshold",
+				"outputs": [
 					{
 						"internalType": "uint256",
-						"name": "_proposalId",
+						"name": "",
 						"type": "uint256"
 					}
 				],
-				"name": "executeProposal",
-				"outputs": [],
-				"stateMutability": "nonpayable",
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "carbonContributorThreshold",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -269,39 +352,58 @@
 				"type": "function"
 			},
 			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "_projectId",
-						"type": "uint256"
-					}
-				],
-				"name": "getProject",
+				"inputs": [],
+				"name": "getAllTransactions",
 				"outputs": [
 					{
-						"internalType": "string",
+						"components": [
+							{
+								"internalType": "address",
+								"name": "user",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "projectId",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "credits",
+								"type": "uint256"
+							},
+							{
+								"internalType": "string",
+								"name": "action",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "timestamp",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct CarbonOffsetMarketplace.Transaction[]",
 						"name": "",
-						"type": "string"
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getLeaderboard",
+				"outputs": [
+					{
+						"internalType": "address[]",
+						"name": "",
+						"type": "address[]"
 					},
 					{
-						"internalType": "uint256",
+						"internalType": "uint256[]",
 						"name": "",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
+						"type": "uint256[]"
 					}
 				],
 				"stateMutability": "view",
@@ -313,19 +415,26 @@
 						"internalType": "address",
 						"name": "_user",
 						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_projectId",
-						"type": "uint256"
 					}
 				],
-				"name": "getUserCredits",
+				"name": "getUserRewards",
 				"outputs": [
 					{
-						"internalType": "uint256",
+						"components": [
+							{
+								"internalType": "uint256",
+								"name": "rewardPoints",
+								"type": "uint256"
+							},
+							{
+								"internalType": "string",
+								"name": "badge",
+								"type": "string"
+							}
+						],
+						"internalType": "struct CarbonOffsetMarketplace.Reward",
 						"name": "",
-						"type": "uint256"
+						"type": "tuple"
 					}
 				],
 				"stateMutability": "view",
@@ -339,12 +448,39 @@
 						"type": "address"
 					}
 				],
-				"name": "getUserReputation",
+				"name": "getUserTransactions",
 				"outputs": [
 					{
-						"internalType": "uint256",
+						"components": [
+							{
+								"internalType": "address",
+								"name": "user",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "projectId",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "credits",
+								"type": "uint256"
+							},
+							{
+								"internalType": "string",
+								"name": "action",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "timestamp",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct CarbonOffsetMarketplace.Transaction[]",
 						"name": "",
-						"type": "uint256"
+						"type": "tuple[]"
 					}
 				],
 				"stateMutability": "view",
@@ -423,45 +559,6 @@
 						"internalType": "uint256",
 						"name": "pricePerCredit",
 						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "proposals",
-				"outputs": [
-					{
-						"internalType": "address",
-						"name": "proposer",
-						"type": "address"
-					},
-					{
-						"internalType": "string",
-						"name": "description",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "votesFor",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "votesAgainst",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "executed",
-						"type": "bool"
 					}
 				],
 				"stateMutability": "view",
@@ -591,6 +688,24 @@
 			{
 				"inputs": [
 					{
+						"internalType": "string",
+						"name": "_badge",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_newThreshold",
+						"type": "uint256"
+					}
+				],
+				"name": "updateBadgeThreshold",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "uint256",
 						"name": "_projectId",
 						"type": "uint256"
@@ -648,7 +763,7 @@
 						"type": "address"
 					}
 				],
-				"name": "userReputation",
+				"name": "userRewardPoints",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -662,19 +777,69 @@
 			{
 				"inputs": [
 					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "userRewards",
+				"outputs": [
+					{
 						"internalType": "uint256",
-						"name": "_proposalId",
+						"name": "rewardPoints",
 						"type": "uint256"
 					},
 					{
-						"internalType": "bool",
-						"name": "_support",
-						"type": "bool"
+						"internalType": "string",
+						"name": "badge",
+						"type": "string"
 					}
 				],
-				"name": "voteOnProposal",
-				"outputs": [],
-				"stateMutability": "nonpayable",
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "userTransactions",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "user",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "projectId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "credits",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "action",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
 				"type": "function"
 			}
 		],
@@ -693,7 +858,7 @@
 		"compilationTarget": {
 			"carbon.sol": "CarbonOffsetMarketplace"
 		},
-		"evmVersion": "istanbul",
+		"evmVersion": "cancun",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
@@ -706,11 +871,11 @@
 	},
 	"sources": {
 		"carbon.sol": {
-			"keccak256": "0x019e72099a29eb39675251d834f705ad51bb45561428700917b78f53c6c9d2fe",
+			"keccak256": "0xa9d8a6fbfeeab15597e201ff119080c247722551c422561b34ae0907940aefda",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://924162eaf7b6e2773fb67a60cfa1c603db7b7787731d18a8fb9a75ba789a1907",
-				"dweb:/ipfs/QmeY3eqYc4djV4PbN6G2UkxxKwXXGDwYRermxbeZZUuDKj"
+				"bzz-raw://6976dbb9ccf7b42d07c649730519f7f9eae87ee26144f85ce45504461f79aece",
+				"dweb:/ipfs/QmR2KhABcdJPDdVK4UvZKQpiykK1rKg4o34SjVhPPa8mxv"
 			]
 		}
 	},

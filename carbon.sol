@@ -17,6 +17,21 @@ contract CarbonOffsetMarketplace {
         uint256 pricePerCredit;
     }
 
+    // Struct to represent a transaction
+    struct Transaction {
+        address user;
+        uint256 projectId;
+        uint256 credits;
+        string action; // "purchase", "retire", "transfer"
+        uint256 timestamp;
+    }
+
+    // Struct to represent a reward
+    struct Reward {
+        uint256 rewardPoints;
+        string badge;
+    }
+
     // Mapping to store all registered projects
     mapping(uint256 => Project) public projects;
     uint256 public projectCount;
@@ -24,8 +39,21 @@ contract CarbonOffsetMarketplace {
     // Mapping to store credits purchased by users
     mapping(address => mapping(uint256 => uint256)) public userCredits;
 
-    // Mapping to store user reputation points
-    mapping(address => uint256) public userReputation;
+    // Mapping to store user rewards
+    mapping(address => Reward) public userRewards;
+
+    // Mapping to store transactions for each user
+    mapping(address => Transaction[]) public userTransactions;
+
+    // Array to store all transactions
+    Transaction[] public allTransactions;
+
+    // Mapping to store user reward points for leaderboard
+    mapping(address => uint256) public userRewardPoints;
+
+    // Badge thresholds
+    uint256 public carbonChampionThreshold = 1000;
+    uint256 public carbonContributorThreshold = 500;
 
     // Event emitted when a new project is registered
     event ProjectRegistered(uint256 projectId, string name, uint256 totalCredits, uint256 pricePerCredit);
@@ -41,6 +69,12 @@ contract CarbonOffsetMarketplace {
 
     // Event emitted when credits are transferred
     event CreditsTransferred(address indexed from, address indexed to, uint256 projectId, uint256 credits);
+
+    // Event emitted when a reward is earned
+    event RewardEarned(address indexed user, uint256 rewardPoints, string badge);
+
+    // Event emitted when badge thresholds are updated
+    event BadgeThresholdUpdated(string badge, uint256 newThreshold);
 
     // Event emitted when a new proposal is created
     event ProposalCreated(uint256 proposalId, string description, address proposer);
@@ -120,7 +154,20 @@ contract CarbonOffsetMarketplace {
 
         project.availableCredits -= _credits;
         userCredits[msg.sender][_projectId] += _credits;
-        userReputation[msg.sender] += _credits; // Increase user's reputation points
+
+        // Record transaction
+        Transaction memory transaction = Transaction({
+            user: msg.sender,
+            projectId: _projectId,
+            credits: _credits,
+            action: "purchase",
+            timestamp: block.timestamp
+        });
+        userTransactions[msg.sender].push(transaction);
+        allTransactions.push(transaction);
+
+        // Update user rewards
+        _updateUserRewards(msg.sender, _credits, "purchase");
 
         // Transfer payment to project owner
         payable(project.owner).transfer(paymentToOwner);
@@ -137,6 +184,21 @@ contract CarbonOffsetMarketplace {
         require(userCredits[msg.sender][_projectId] >= _credits, "Insufficient credits to retire");
 
         userCredits[msg.sender][_projectId] -= _credits;
+
+        // Record transaction
+        Transaction memory transaction = Transaction({
+            user: msg.sender,
+            projectId: _projectId,
+            credits: _credits,
+            action: "retire",
+            timestamp: block.timestamp
+        });
+        userTransactions[msg.sender].push(transaction);
+        allTransactions.push(transaction);
+
+        // Update user rewards
+        _updateUserRewards(msg.sender, _credits, "retire");
+
         emit CreditsRetired(msg.sender, _projectId, _credits);
     }
 
@@ -146,9 +208,6 @@ contract CarbonOffsetMarketplace {
         require(userCredits[msg.sender][_projectId] >= _credits, "Insufficient credits to transfer");
         require(msg.value >= transferFee, "Insufficient fee for the transfer");
 
-        uint256 totalCredits = userCredits[msg.sender][_projectId];
-        require(totalCredits >= _credits, "Insufficient credits for transfer");
-
         // Deduct transfer fee from sender
         payable(owner).transfer(transferFee);
 
@@ -156,80 +215,93 @@ contract CarbonOffsetMarketplace {
         userCredits[msg.sender][_projectId] -= _credits;
         userCredits[_to][_projectId] += _credits;
 
+        // Record transaction
+        Transaction memory transaction = Transaction({
+            user: msg.sender,
+            projectId: _projectId,
+            credits: _credits,
+            action: "transfer",
+            timestamp: block.timestamp
+        });
+        userTransactions[msg.sender].push(transaction);
+        allTransactions.push(transaction);
+
+        // Update user rewards
+        _updateUserRewards(msg.sender, _credits, "transfer");
+
         emit CreditsTransferred(msg.sender, _to, _projectId, _credits);
     }
 
-    // Get project details
-    function getProject(uint256 _projectId) public view returns (string memory, uint256, uint256, uint256, address) {
-        require(_projectId < projectCount, "Invalid project ID");
-        Project storage project = projects[_projectId];
-        return (project.name, project.totalCredits, project.availableCredits, project.pricePerCredit, project.owner);
-    }
+    // Function to update user rewards
+    function _updateUserRewards(address _user, uint256 _credits, string memory) internal {
+        Reward storage reward = userRewards[_user];
 
-    // Get user's credits for a specific project
-    function getUserCredits(address _user, uint256 _projectId) public view returns (uint256) {
-        require(_projectId < projectCount, "Invalid project ID");
-        return userCredits[_user][_projectId];
-    }
+        // Example reward logic: 1 point per credit, with additional badges
+        uint256 pointsEarned = _credits;
+        reward.rewardPoints += pointsEarned;
+        userRewardPoints[_user] = reward.rewardPoints;
 
-    // Get user's reputation points
-    function getUserReputation(address _user) public view returns (uint256) {
-        return userReputation[_user];
-    }
-
-    // Governance: Allows users to vote on project proposals
-    struct Proposal {
-        address proposer;
-        string description;
-        uint256 votesFor;
-        uint256 votesAgainst;
-        bool executed;
-    }
-
-    Proposal[] public proposals;
-
-    // Create a new proposal
-    function createProposal(string memory _description) public {
-        require(msg.sender == owner, "Only the owner can create proposals");
-        require(bytes(_description).length > 0, "Proposal description cannot be empty");
-
-        proposals.push(Proposal({
-            proposer: msg.sender,
-            description: _description,
-            votesFor: 0,
-            votesAgainst: 0,
-            executed: false
-        }));
-
-        emit ProposalCreated(proposals.length - 1, _description, msg.sender);
-    }
-
-    // Vote on a proposal
-    function voteOnProposal(uint256 _proposalId, bool _support) public {
-        require(_proposalId < proposals.length, "Invalid proposal ID");
-        Proposal storage proposal = proposals[_proposalId];
-        require(!proposal.executed, "Proposal already executed");
-
-        if (_support) {
-            proposal.votesFor++;
+        if (reward.rewardPoints >= carbonChampionThreshold) {
+            reward.badge = "Carbon Champion";
+        } else if (reward.rewardPoints >= carbonContributorThreshold) {
+            reward.badge = "Carbon Contributor";
         } else {
-            proposal.votesAgainst++;
+            reward.badge = "Novice";
         }
 
-        emit VoteCast(_proposalId, msg.sender, _support);
+        emit RewardEarned(_user, reward.rewardPoints, reward.badge);
     }
 
-    // Execute a proposal if it has enough votes
-    function executeProposal(uint256 _proposalId) public {
-        require(msg.sender == owner, "Only the owner can execute proposals");
-        require(_proposalId < proposals.length, "Invalid proposal ID");
-        Proposal storage proposal = proposals[_proposalId];
-        require(!proposal.executed, "Proposal already executed");
-        require(proposal.votesFor >= minVotesForProposal, "Proposal did not meet the minimum votes required");
+    // Function to retrieve all transactions
+    function getAllTransactions() public view returns (Transaction[] memory) {
+        return allTransactions;
+    }
 
-        // Add your proposal execution logic here
+    // Function to retrieve user transactions
+    function getUserTransactions(address _user) public view returns (Transaction[] memory) {
+        return userTransactions[_user];
+    }
 
-        proposal.executed = true;
-        emit ProposalExecuted(_proposalId);
+    // Function to retrieve user rewards
+    function getUserRewards(address _user) public view returns (Reward memory) {
+        return userRewards[_user];
+    }
+
+    // Function to retrieve the leaderboard
+    function getLeaderboard() public view returns (address[] memory, uint256[] memory) {
+        uint256[] memory rewardPoints = new uint256[](projectCount);
+        address[] memory users = new address[](projectCount);
+
+        for (uint256 i = 0; i < projectCount; i++) {
+            users[i] = projects[i].owner;
+            rewardPoints[i] = userRewardPoints[projects[i].owner];
+        }
+
+        // Bubble sort to order users by reward points
+        for (uint256 i = 0; i < rewardPoints.length - 1; i++) {
+            for (uint256 j = i + 1; j < rewardPoints.length; j++) {
+                if (rewardPoints[i] < rewardPoints[j]) {
+                    (rewardPoints[i], rewardPoints[j]) = (rewardPoints[j], rewardPoints[i]);
+                    (users[i], users[j]) = (users[j], users[i]);
+                }
+            }
+        }
+
+        return (users, rewardPoints);
+    }
+
+    // Function to update badge thresholds
+    function updateBadgeThreshold(string memory _badge, uint256 _newThreshold) public {
+        require(msg.sender == owner, "Only the owner can update badge thresholds");
+
+        if (keccak256(abi.encodePacked(_badge)) == keccak256(abi.encodePacked("Carbon Champion"))) {
+            carbonChampionThreshold = _newThreshold;
+        } else if (keccak256(abi.encodePacked(_badge)) == keccak256(abi.encodePacked("Carbon Contributor"))) {
+            carbonContributorThreshold = _newThreshold;
+        } else {
+            revert("Invalid badge type");
+        }
+
+        emit BadgeThresholdUpdated(_badge, _newThreshold);
     }
 }
